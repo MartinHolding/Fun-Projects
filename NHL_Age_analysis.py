@@ -3,10 +3,21 @@ from matplotlib import pyplot as plt
 import numpy as np
 import seaborn as sns
 import pandas as pd
+import glob
 
-#Load in the regular season data 
+#Load in the regular season data and add the season column so I can better track player age
+bio_files = glob.glob('Bio_Info_*.csv')
 
-bio_data = pd.read_csv('Bio Info All.csv') #player bio
+df_list= []
+endYear = 2015
+for filename in bio_files:
+  print(filename)
+  data = pd.read_csv(filename)
+  data['Season'] = endYear
+  df_list.append(data)
+  endYear += 1
+
+bio_data = pd.concat(df_list)
 
 #Get a summary of the data
 
@@ -15,19 +26,34 @@ print(bio_data.head())
 ## ----------Lets start by looking at the age of the players grouped by team and across seasons ----------- ## 
 
 #First, since bio doesn't give us the players current age, we need to calculate it by hand
-todays_date = 20202509 # store as int so I can subtract this from player DOB
 
 #Loop through dobs in biodata and convert to int for subtraction and back to str for extraction and back to int
 #for storage. There must be a simpler way of doing this....
 ages = []
-for birthday in bio_data.DOB:
-    dob_int = int(birthday.replace("-", "")) #remove '-' character
-    age_int = todays_date-dob_int
-    age = int(str(age_int)[:2]) #Only interested in the age in years (the first 2 characters)
-    ages.append(age)
+seasons = ['2015_Season', '2016_Season', '2017_Season', '2018_Season', '2019_Season', '2020_Season']
+ages_df = pd.DataFrame(columns= seasons)
+
+todays_date = 20152509 # store as int so I can subtract this from player DOB
+
+#Use df.at[row, col] to add each age to each column. 
+#Will need to do a double loop to iterate over all players and also increment the year by adding 10000
+row_idx = 0
+col_idx = 0
+for season in seasons:
+    print(todays_date)
+    for birthday in bio_data.DOB:
+        dob_int = int(birthday.replace("-", "")) #remove '-' character
+        age_int = todays_date-dob_int
+        age = int(str(age_int)[:2]) #Only interested in the age in years (the first 2 characters)
+        ages.append(age)
+        ages_df.at[row_idx, season] = age
+        row_idx += 1 
+    todays_date += 10000 #add extra year to date
+    col_idx += 1
+    row_idx = 0
 
 
-#Add ages back into bio dataframe 
+#create a new data frame of the ages in each season
 bio_data["Age"] = ages
 
 #Now I can make a violin chart of the ages of players across the teams
